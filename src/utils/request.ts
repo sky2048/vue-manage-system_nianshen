@@ -9,6 +9,11 @@ const service: AxiosInstance = axios.create({
 
 service.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
+        // 检查是否是加载mock数据的请求（以./或../开头的相对路径）
+        if (config.url && (config.url.startsWith('./') || config.url.startsWith('../'))) {
+            config.baseURL = ''; // 清空baseURL，使用相对路径
+        }
+        
         // 从localStorage获取token添加到请求头
         const token = localStorage.getItem('vuems_token');
         if (token) {

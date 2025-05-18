@@ -34,10 +34,14 @@
                     <el-link type="primary" @click="$router.push('/reset-pwd')">忘记密码</el-link>
                 </div>
                 <el-button class="login-btn" type="primary" size="large" @click="submitForm(login)">登录</el-button>
-                <p class="login-tips">Tips : 请输入正确的用户名和密码登录系统。</p>
+                <p class="login-tips">
+                    Tips : 请输入正确的用户名和密码登录系统。
+                </p>
+                <!-- 注释掉账号注册入口
                 <p class="login-text">
                     没有账号？<el-link type="primary" @click="$router.push('/register')">立即注册</el-link>
                 </p>
+                -->
             </el-form>
         </div>
     </div>
@@ -96,7 +100,7 @@ const submitForm = (formEl: FormInstance | undefined) => {
                     localStorage.setItem('vuems_userId', user.id);
                     
                     // 设置权限
-                    const keys = permiss.defaultList[user.role === 'admin' ? 'admin' : 'user'];
+                    const keys = permiss.defaultList[user.role] || permiss.defaultList.user;
                     permiss.handleSet(keys);
                     
                     ElMessage.success('登录成功');

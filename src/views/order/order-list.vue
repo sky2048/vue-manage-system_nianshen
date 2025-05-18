@@ -6,7 +6,7 @@
 				:delFunc="handleDelete" :editFunc="handleEdit" :refresh="getData" :currentPage="page.index"
 				:changePage="changePage">
 				<template #toolbarBtn>
-					<el-button type="warning" :icon="CirclePlusFilled" @click="visible = true">新增订单</el-button>
+					<el-button type="warning" :icon="CirclePlusFilled" v-if="isManagerOrAdmin" @click="handleAdd">新增订单</el-button>
 				</template>
 				<template #amount="{ rows }">
 					￥{{ rows.amount }}
@@ -21,9 +21,9 @@
 				</template>
 				<template #operator="{ rows }">
 					<div class="operation-buttons">
-						<el-button type="warning" size="small" @click="handleView(rows)">查看</el-button>
-						<el-button type="primary" size="small" @click="handleEdit(rows)">编辑</el-button>
-						<el-button type="danger" size="small" @click="handleDelete(rows)">删除</el-button>
+						<el-button type="warning" size="small" v-if="isManagerOrAdmin" @click="handleView(rows)">查看</el-button>
+						<el-button type="primary" size="small" v-if="isManagerOrAdmin" @click="handleEdit(rows)">编辑</el-button>
+						<el-button type="danger" size="small" v-if="isAdmin" @click="handleDelete(rows)">删除</el-button>
 					</div>
 				</template>
 			</TableCustom>
@@ -42,15 +42,20 @@
 </template>
 
 <script setup lang="ts" name="orderList">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { CirclePlusFilled, View, Edit, Delete } from '@element-plus/icons-vue';
-import { fetchOrderList, fetchOrderDetail, updateOrderStatus, deleteOrder } from '@/api/order';
+import { fetchOrderList, fetchOrderDetail, updateOrderStatus, deleteOrder, createOrder } from '@/api/order';
 import TableCustom from '@/components/table-custom.vue';
 import TableDetail from '@/components/table-detail.vue';
 import TableSearch from '@/components/table-search.vue';
 import TableEdit from '@/components/table-edit.vue';
 import { FormOption, FormOptionList } from '@/types/form-option';
+
+// 获取当前用户角色
+const userRole = localStorage.getItem('vuems_role') || 'user';
+const isAdmin = computed(() => userRole === 'admin');
+const isManagerOrAdmin = computed(() => userRole === 'admin' || userRole === 'manager');
 
 // 格式化日期的函数
 const formatDate = (dateString: string): string => {
@@ -129,20 +134,25 @@ const getData = async () => {
 	try {
 		console.log('获取订单数据');
 		
+		// 添加分页参数
+		const params = {
+			...query,
+			page: page.index,
+			limit: page.size
+		};
+		
 		// 直接调用API获取所有订单数据
-		const res = await fetchOrderList();
+		const res = await fetchOrderList(params);
 		console.log('订单数据响应:', res);
 		
 		if (res.data && res.data.success) {
-			if (res.data.data && res.data.data.orders) {
-				tableData.value = res.data.data.orders;
-				page.total = res.data.data.total || 0;
-				console.log('获取到订单数据:', tableData.value);
-			} else {
-				console.warn('响应格式不符合预期:', res.data);
-				tableData.value = [];
-				page.total = 0;
-			}
+			// 直接使用返回的数据
+			const orders = res.data.data.orders || [];
+			const total = res.data.data.total || 0;
+			
+			tableData.value = orders;
+			page.total = total;
+			console.log('获取到订单数据:', tableData.value);
 		} else {
 			const message = res.data && res.data.message ? res.data.message : '获取订单列表失败';
 			console.error('获取订单失败:', message);
@@ -206,9 +216,47 @@ const handleEdit = (row: any) => {
 	visible.value = true;
 };
 
-const updateData = () => {
-	closeDialog();
-	getData();
+// 添加一个新订单
+const handleAdd = () => {
+	rowData.value = {
+		companyName: '',
+		legalPerson: '',
+		registrationCode: '',
+		amount: 0,
+		orderType: '公司注册',
+		payStatus: '未支付'
+	};
+	isEdit.value = false;
+	visible.value = true;
+};
+
+const updateData = async (formData: any) => {
+	try {
+		if (isEdit.value) {
+			// 更新现有订单
+			const res = await updateOrderStatus(formData.id, formData);
+			if (res.data && res.data.success) {
+				ElMessage.success('订单更新成功');
+				closeDialog();
+				getData();
+			} else {
+				ElMessage.error(res.data?.message || '订单更新失败');
+			}
+		} else {
+			// 创建新订单
+			const res = await createOrder(formData);
+			if (res.data && res.data.success) {
+				ElMessage.success('订单创建成功');
+				closeDialog();
+				getData();
+			} else {
+				ElMessage.error(res.data?.message || '订单创建失败');
+			}
+		}
+	} catch (error) {
+		console.error('操作订单数据失败:', error);
+		ElMessage.error('操作失败，请重试');
+	}
 };
 
 const closeDialog = () => {

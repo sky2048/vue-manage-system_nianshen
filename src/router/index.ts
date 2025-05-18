@@ -19,7 +19,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'dashboard',
                 meta: {
                     title: '系统首页',
-                    noAuth: true,
+                    permiss: '0',
                 },
                 component: () => import(/* webpackChunkName: "dashboard" */ '../views/dashboard.vue'),
             },
@@ -251,11 +251,10 @@ const routes: RouteRecordRaw[] = [
     },
     {
         path: '/register',
+        redirect: '/login',
         meta: {
-            title: '注册',
             noAuth: true,
         },
-        component: () => import(/* webpackChunkName: "register" */ '../views/pages/register.vue'),
     },
     {
         path: '/reset-pwd',
@@ -291,17 +290,44 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
     NProgress.start();
-    const role = localStorage.getItem('vuems_name');
+    const token = localStorage.getItem('vuems_token');
+    const role = localStorage.getItem('vuems_role');
     const permiss = usePermissStore();
+    
+    console.log('路由守卫检查:', { 
+        path: to.path, 
+        requiresAuth: to.meta.noAuth !== true,
+        hasToken: !!token,
+        role: role
+    });
 
-    if (!role && to.meta.noAuth !== true) {
+    // 检查是否需要登录
+    if (!token && to.meta.noAuth !== true) {
+        console.log('未登录，重定向到登录页面');
         next('/login');
-    } else if (typeof to.meta.permiss == 'string' && !permiss.key.includes(to.meta.permiss)) {
-        // 如果没有权限，则进入403
-        next('/403');
-    } else {
-        next();
+        return;
     }
+    
+    // 检查路由权限
+    if (typeof to.meta.permiss === 'string') {
+        const hasPermission = permiss.key.includes(to.meta.permiss);
+        console.log('权限检查:', {
+            requiredPermission: to.meta.permiss,
+            userPermissions: permiss.key,
+            hasPermission: hasPermission
+        });
+        
+        // 如果没有权限，则进入403
+        if (!hasPermission) {
+            console.log('无权限访问，重定向到403页面');
+            next('/403');
+            return;
+        }
+    }
+    
+    // 权限检查通过
+    console.log('路由检查通过');
+    next();
 });
 
 router.afterEach(() => {

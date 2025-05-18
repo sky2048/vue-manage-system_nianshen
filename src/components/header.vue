@@ -87,7 +87,13 @@ onMounted(() => {
 const router = useRouter();
 const handleCommand = (command: string) => {
     if (command == 'loginout') {
+        // 清除所有登录信息
+        localStorage.removeItem('vuems_token');
         localStorage.removeItem('vuems_name');
+        localStorage.removeItem('vuems_role');
+        localStorage.removeItem('vuems_userId');
+        
+        console.log('用户已登出，所有凭证已清除');
         router.push('/login');
     } else if (command == 'user') {
         router.push('/ucenter');

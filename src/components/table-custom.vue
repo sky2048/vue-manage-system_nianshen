@@ -54,7 +54,7 @@
                                 </div>
                             </template>
                             <span v-else-if="item.formatter">
-                                {{ item.formatter(row[item.prop]) }}
+                                {{ item.formatter(row[item.prop], row) }}
                             </span>
                             <span v-else>
                                 {{ row[item.prop] }}

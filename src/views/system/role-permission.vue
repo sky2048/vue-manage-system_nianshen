@@ -9,14 +9,15 @@
             show-checkbox
             :default-checked-keys="checkedKeys"
         />
-        <el-button type="primary" @click="onSubmit">保存权限</el-button>
+        <el-button type="primary" @click="onSubmit" :loading="loading">保存权限</el-button>
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { ElTree } from 'element-plus';
+import { ElTree, ElMessage } from 'element-plus';
 import { menuData } from '@/components/menu';
+import { updateRolePermission } from '@/api';
 
 const props = defineProps({
     permissOptions: {
@@ -24,6 +25,9 @@ const props = defineProps({
         required: true,
     },
 });
+
+// 父组件传递的关闭对话框的方法
+const emit = defineEmits(['update:permissions', 'close']);
 
 const menuObj = ref({});
 // const data = menuData.map((item) => {
@@ -62,14 +66,44 @@ const checkData = (data: string[]) => {
     });
 };
 // 获取当前权限
-const checkedKeys = ref<string[]>(checkData(props.permissOptions.permiss));
+const checkedKeys = ref<string[]>(checkData(props.permissOptions.permiss || []));
 
 // 保存权限
 const tree = ref<InstanceType<typeof ElTree>>();
-const onSubmit = () => {
+const loading = ref(false);
+
+const onSubmit = async () => {
+    if (!tree.value) return;
+    
     // 获取选中的权限
-    const keys = [...tree.value!.getCheckedKeys(false), ...tree.value!.getHalfCheckedKeys()] as number[];
-    console.log(keys);
+    const keys = [...tree.value.getCheckedKeys(false), ...tree.value.getHalfCheckedKeys()];
+    console.log('选中的权限ID:', keys);
+    
+    loading.value = true;
+    try {
+        // 调用API更新角色权限
+        const res = await updateRolePermission(props.permissOptions.id, keys as string[]);
+        
+        if (res.data && res.data.success) {
+            ElMessage.success(res.data.message || '权限设置保存成功');
+            
+            // 通知父组件权限已更新
+            emit('update:permissions', {
+                id: props.permissOptions.id,
+                permiss: keys
+            });
+            
+            // 关闭对话框
+            emit('close');
+        } else {
+            ElMessage.error(res.data?.message || '权限设置保存失败');
+        }
+    } catch (error) {
+        console.error('保存权限出错:', error);
+        ElMessage.error('保存权限失败');
+    } finally {
+        loading.value = false;
+    }
 };
 </script>
 
