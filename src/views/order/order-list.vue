@@ -94,15 +94,19 @@ const query = reactive({
 const searchOpt = ref<FormOptionList[]>([
 	{ type: 'input', label: '公司名称：', prop: 'companyName' },
 	{
-		type: 'select', label: '支付状态：', prop: 'payStatus', placeholder: '请选择支付状态', opts: [
+		type: 'select', 
+		label: '支付状态：', 
+		prop: 'payStatus', 
+		placeholder: '请选择支付状态', 
+		options: [
 			{ label: '全部', value: '' },
 			{ label: '未支付', value: '未支付' },
 			{ label: '已支付', value: '已支付' },
 			{ label: '已取消', value: '已取消' }
 		]
 	},
-	{ type: 'date', label: '开始日期：', prop: 'startDate', format: 'YYYY-MM-DD' },
-	{ type: 'date', label: '结束日期：', prop: 'endDate', format: 'YYYY-MM-DD' }
+	{ type: 'date', label: '开始日期：', prop: 'startDate', format: 'YYYY-MM-DD', placeholder: '请选择开始日期' },
+	{ type: 'date', label: '结束日期：', prop: 'endDate', format: 'YYYY-MM-DD', placeholder: '请选择结束日期' }
 ]);
 
 const handleSearch = () => {
@@ -135,16 +139,39 @@ const getData = async () => {
 	try {
 		console.log('获取订单数据');
 		
-		// 添加分页参数
-		const params = {
-			...query,
+		// 处理查询参数
+		const params: any = {
 			page: page.index,
 			limit: page.size
 		};
 		
+		// 添加公司名称搜索条件
+		if (query.companyName) {
+			params.companyName = query.companyName;
+		}
+		
+		// 添加支付状态搜索条件
+		if (query.payStatus) {
+			params.payStatus = query.payStatus;
+		}
+		
+		// 添加日期范围搜索条件
+		if (query.startDate) {
+			params.startDate = query.startDate;
+		}
+		
+		if (query.endDate) {
+			// 结束日期需要调整为当天的23:59:59，以包含整天的数据
+			// 因为后端可能用的是带时间的比较，而不是纯日期比较
+			const endDate = new Date(query.endDate);
+			endDate.setHours(23, 59, 59, 999);
+			params.endDate = endDate.toISOString().split('T')[0] + ' 23:59:59';
+			console.log('调整后的结束日期:', params.endDate);
+		}
+		
 		console.log('请求参数:', params);
 		
-		// 直接调用API获取所有订单数据
+		// 调用API获取订单数据
 		const res = await fetchOrderList(params);
 		console.log('订单数据响应:', res);
 		

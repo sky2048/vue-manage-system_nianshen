@@ -5,12 +5,12 @@
 				<el-form-item :label="item.label" :prop="item.prop">
 					<!-- 文本框、数字框、下拉框、日期框、开关、上传 -->
 					<el-input v-if="item.type === 'input'" v-model="form[item.prop]" :disabled="item.disabled"
-						:placeholder="item.placeholder" clearable :type="item.inputType || 'text'"></el-input>
+						:placeholder="item.placeholder || '请输入' + item.label" clearable :type="item.inputType || 'text'"></el-input>
 					<el-input-number v-else-if="item.type === 'number'" v-model="form[item.prop]"
 						:disabled="item.disabled" controls-position="right"></el-input-number>
 					<el-select v-else-if="item.type === 'select'" v-model="form[item.prop]" :disabled="item.disabled"
-						:placeholder="item.placeholder" clearable>
-						<el-option v-for="opt in (item.opts || item.options || [])" :label="opt.label" :value="opt.value"></el-option>
+						:placeholder="item.placeholder || '请选择' + item.label" clearable class="edit-select">
+						<el-option v-for="opt in (item.opts || item.options || [])" :key="opt.value" :label="opt.label" :value="opt.value"></el-option>
 					</el-select>
 					<el-date-picker v-else-if="item.type === 'date'" type="date" v-model="form[item.prop]"
 						:value-format="item.format"></el-date-picker>
@@ -40,7 +40,7 @@
 <script lang="ts" setup>
 import { FormOption } from '@/types/form-option';
 import { FormInstance, FormRules, UploadProps } from 'element-plus';
-import { PropType, ref, computed } from 'vue';
+import { PropType, ref, computed, onMounted } from 'vue';
 
 const { options, formData, edit, update } = defineProps({
 	options: {
@@ -90,6 +90,11 @@ const handleAvatarSuccess: UploadProps['onSuccess'] = (response, uploadFile) => 
 	form.value.thumb = URL.createObjectURL(uploadFile.raw!);
 };
 
+// 确保组件初始化时表单数据已正确加载
+onMounted(() => {
+	console.log('编辑表单数据已加载:', form.value);
+});
+
 </script>
 
 <style>
@@ -112,5 +117,17 @@ const handleAvatarSuccess: UploadProps['onSuccess'] = (response, uploadFile) => 
 	width: 178px;
 	height: 178px;
 	text-align: center;
+}
+
+.edit-select {
+	width: 100%;
+}
+
+:deep(.el-select .el-input__inner) {
+	text-align: left;
+}
+
+:deep(.el-select__wrapper) {
+	width: 100%;
 }
 </style>

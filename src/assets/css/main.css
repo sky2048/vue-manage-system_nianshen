@@ -108,3 +108,37 @@ i {
     --el-message-border-color: #4AB461;
     --el-message-bg-color: #F0F9EB;
 }
+
+/* 下拉框全局样式修复 */
+.el-select {
+    width: 100%;
+}
+
+.el-select .el-input__inner {
+    text-align: left !important;
+    padding-right: 30px !important;
+}
+
+.el-select .el-input {
+    position: relative;
+    width: 100%;
+}
+
+.el-select .el-select__wrapper {
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.el-select-dropdown__item {
+    text-align: left;
+}
+
+/* 确保下拉框中的文本可见 */
+.el-select .el-select__tags {
+    max-width: 85%;
+}
+
+.el-form-item {
+    margin-bottom: 18px;
+}

@@ -24,6 +24,33 @@ service.interceptors.request.use(
             console.log('添加认证Token到请求头');
         }
 
+        // 处理日期格式
+        if (config.params) {
+            // 确保日期参数是有效的格式
+            if (config.params.startDate || config.params.endDate) {
+                console.log('处理日期参数:', {
+                    startDate: config.params.startDate, 
+                    endDate: config.params.endDate
+                });
+                
+                // 如果需要转换日期格式，可以在这里处理
+                // 例如将开始日期设置为当天的开始时间 00:00:00
+                if (config.params.startDate && !config.params.startDate.includes(' ')) {
+                    config.params.startDate = config.params.startDate + ' 00:00:00';
+                }
+                
+                // 如果没有设置结束日期格式，确保它是当天的结束时间 23:59:59
+                if (config.params.endDate && !config.params.endDate.includes(' ')) {
+                    config.params.endDate = config.params.endDate + ' 23:59:59';
+                }
+                
+                console.log('处理后的日期参数:', {
+                    startDate: config.params.startDate, 
+                    endDate: config.params.endDate
+                });
+            }
+        }
+
         // 添加时间戳防止缓存
         if (config.method?.toLowerCase() === 'get') {
             config.params = { ...config.params, _t: Date.now() };
