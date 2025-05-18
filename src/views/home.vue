@@ -43,18 +43,31 @@ const tabs = useTabsStore();
     transition: left 0.3s ease-in-out;
     background: #eef0fc;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .content {
-    width: auto;
+    width: 100%;
     height: 100%;
     padding: 20px;
-    overflow-y: scroll;
+    overflow-y: auto;
     box-sizing: border-box;
+    flex: 1;
 }
 
 .content::-webkit-scrollbar {
-    width: 0;
+    width: 6px;
+    height: 6px;
+}
+
+.content::-webkit-scrollbar-thumb {
+    background-color: rgba(144, 147, 153, 0.3);
+    border-radius: 3px;
+}
+
+.content::-webkit-scrollbar-track {
+    background-color: transparent;
 }
 
 .content-collapse {

@@ -8,6 +8,26 @@ export const menuData: Menus[] = [
         icon: 'Odometer',
     },
     {
+        id: '9',
+        title: '订单管理',
+        index: '9',
+        icon: 'Ticket',
+        children: [
+            {
+                id: '91',
+                pid: '9',
+                index: '/order-list',
+                title: '订单列表',
+            },
+            {
+                id: '92',
+                pid: '9',
+                index: '/order-stats',
+                title: '订单统计',
+            },
+        ],
+    },
+    {
         id: '1',
         title: '系统管理',
         index: '1',

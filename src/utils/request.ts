@@ -6,6 +6,11 @@ const service: AxiosInstance = axios.create({
 
 service.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
+        // 从localStorage获取token添加到请求头
+        const token = localStorage.getItem('vuems_token');
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
         return config;
     },
     (error: AxiosError) => {

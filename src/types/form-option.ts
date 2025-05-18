@@ -12,6 +12,7 @@ export interface FormOptionList {
     placeholder?: string;
     disabled?: boolean;
     opts?: any[];
+    options?: Array<{label: string, value: any}>;
     format?: string;
     activeValue?: any;
     inactiveValue?: any;

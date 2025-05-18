@@ -35,11 +35,11 @@
                 </el-tooltip>
             </div>
         </div>
-        <el-table class="mgb20" :style="{ width: '100%' }" border :data="tableData" :row-key="rowKey"
-            @selection-change="handleSelectionChange" table-layout="auto">
+        <el-table class="mgb20" border :data="tableData" :row-key="rowKey"
+            @selection-change="handleSelectionChange" table-layout="auto" stripe highlight-current-row>
             <template v-for="item in columns" :key="item.prop">
                 <el-table-column v-if="item.visible" :prop="item.prop" :label="item.label" :width="item.width"
-                    :type="item.type" :align="item.align || 'center'">
+                    :type="item.type" :align="item.align || 'center'" :fixed="item.fixed">
 
                     <template #default="{ row, column, $index }" v-if="item.type === 'index'">
                         {{ getIndex($index) }}
@@ -47,15 +47,11 @@
                     <template #default="{ row, column, $index }" v-if="!item.type">
                         <slot :name="item.prop" :rows="row" :index="$index">
                             <template v-if="item.prop == 'operator'">
-                                <el-button type="warning" size="small" :icon="View" @click="viewFunc(row)">
-                                    查看
-                                </el-button>
-                                <el-button type="primary" size="small" :icon="Edit" @click="editFunc(row)">
-                                    编辑
-                                </el-button>
-                                <el-button type="danger" size="small" :icon="Delete" @click="handleDelete(row)">
-                                    删除
-                                </el-button>
+                                <div class="operation-btn-group">
+                                    <el-button type="warning" size="small" @click="viewFunc(row)">查看</el-button>
+                                    <el-button type="primary" size="small" @click="editFunc(row)">编辑</el-button>
+                                    <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+                                </div>
                             </template>
                             <span v-else-if="item.formatter">
                                 {{ item.formatter(row[item.prop]) }}
@@ -68,8 +64,10 @@
                 </el-table-column>
             </template>
         </el-table>
-        <el-pagination v-if="hasPagination" :current-page="currentPage" :page-size="pageSize" :background="true"
-            :layout="layout" :total="total" @current-change="handleCurrentChange" />
+        <div class="pagination-container" v-if="hasPagination">
+            <el-pagination :current-page="currentPage" :page-size="pageSize" :background="true"
+                :layout="layout" :total="total" @current-change="handleCurrentChange" />
+        </div>
     </div>
 </template>
 
@@ -203,9 +201,65 @@ const getIndex = (index: number) => {
     cursor: pointer;
     color: #676767;
 }
+
+.operation-btn-group {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+}
+
+.operation-btn-group .el-button {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
 </style>
 <style>
 .table-header .cell {
     color: #333;
+}
+
+.el-table {
+    width: 100% !important;
+}
+
+.el-table__body {
+    width: 100% !important;
+}
+
+.el-table__header {
+    width: 100% !important;
+}
+
+.el-table .el-table__cell {
+    padding: 8px 0;
+}
+
+.el-table .cell {
+    line-height: 1.5;
+    padding: 0 10px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.el-table th.el-table__cell {
+    background-color: #f5f7fa !important;
+    color: #333;
+    font-weight: bold;
+    height: 45px;
+}
+
+.el-button--small {
+    height: 28px;
+    padding: 5px 8px;
+    font-size: 12px;
+    border-radius: 3px;
 }
 </style>

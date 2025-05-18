@@ -221,6 +221,24 @@ const routes: RouteRecordRaw[] = [
                 },
                 component: () => import(/* webpackChunkName: "statistic" */ '../views/element/statistic.vue'),
             },
+            {
+                path: '/order-list',
+                name: 'order-list',
+                meta: {
+                    title: '订单列表',
+                    permiss: '91',
+                },
+                component: () => import(/* webpackChunkName: "order-list" */ '../views/order/order-list.vue'),
+            },
+            {
+                path: '/order-stats',
+                name: 'order-stats',
+                meta: {
+                    title: '订单统计',
+                    permiss: '92',
+                },
+                component: () => import(/* webpackChunkName: "order-stats" */ '../views/order/order-stats.vue'),
+            },
         ],
     },
     {
