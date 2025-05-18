@@ -94,7 +94,7 @@ const query = reactive({
 const searchOpt = ref<FormOptionList[]>([
 	{ type: 'input', label: '公司名称：', prop: 'companyName' },
 	{
-		type: 'select', label: '支付状态：', prop: 'payStatus', opts: [
+		type: 'select', label: '支付状态：', prop: 'payStatus', placeholder: '请选择支付状态', opts: [
 			{ label: '全部', value: '' },
 			{ label: '未支付', value: '未支付' },
 			{ label: '已支付', value: '已支付' },
@@ -106,6 +106,7 @@ const searchOpt = ref<FormOptionList[]>([
 ]);
 
 const handleSearch = () => {
+	console.log('搜索条件:', query);
 	changePage(1);
 };
 

@@ -5,7 +5,8 @@ export const menuData: Menus[] = [
         id: '0',
         title: '系统首页',
         index: '/dashboard',
-        icon: 'Odometer',
+        icon: 'HomeFilled',
+        permiss: '0',
     },
     {
         id: '9',

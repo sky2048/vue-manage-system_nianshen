@@ -1,171 +1,312 @@
 <template>
-    <div>
-        <el-row :gutter="20" class="mgb20">
-            <el-col :span="6">
-                <el-card shadow="hover" body-class="card-body">
-                    <el-icon class="card-icon bg1">
-                        <User />
-                    </el-icon>
-                    <div class="card-content">
-                        <countup class="card-num color1" :end="6666" />
-                        <div>用户访问量</div>
-                    </div>
-                </el-card>
-            </el-col>
-            <el-col :span="6">
-                <el-card shadow="hover" body-class="card-body">
-                    <el-icon class="card-icon bg2">
-                        <ChatDotRound />
-                    </el-icon>
-                    <div class="card-content">
-                        <countup class="card-num color2" :end="168" />
-                        <div>系统消息</div>
-                    </div>
-                </el-card>
-            </el-col>
-            <el-col :span="6">
-                <el-card shadow="hover" body-class="card-body">
-                    <el-icon class="card-icon bg3">
-                        <Goods />
-                    </el-icon>
-                    <div class="card-content">
-                        <countup class="card-num color3" :end="8888" />
-                        <div>商品数量</div>
-                    </div>
-                </el-card>
-            </el-col>
-            <el-col :span="6">
-                <el-card shadow="hover" body-class="card-body">
-                    <el-icon class="card-icon bg4">
-                        <ShoppingCartFull />
-                    </el-icon>
-                    <div class="card-content">
-                        <countup class="card-num color4" :end="568" />
-                        <div>今日订单量</div>
-                    </div>
-                </el-card>
-            </el-col>
-        </el-row>
-
-        <el-row :gutter="20" class="mgb20">
-            <el-col :span="24">
-                <el-card shadow="hover">
+    <div class="dashboard-container">
+        <div class="stats-row">
+            <el-card shadow="hover" class="stat-card">
+                <template #header>
                     <div class="card-header">
-                        <p class="card-header-title">订单动态</p>
-                        <p class="card-header-desc">最近一周订单状态，包括订单成交量和订单退货量</p>
+                        <span>今日订单数(单)</span>
                     </div>
-                    <v-chart class="chart" :option="dashOpt1" />
-                </el-card>
-            </el-col>
-        </el-row>
+                </template>
+                <div class="card-value">{{ orderStats.todayOrderCount }}</div>
+            </el-card>
+            
+            <el-card shadow="hover" class="stat-card">
+                <template #header>
+                    <div class="card-header">
+                        <span>今日成交数(单)</span>
+                    </div>
+                </template>
+                <div class="card-value">{{ orderStats.todayPaidOrderCount }}</div>
+            </el-card>
+            
+            <el-card shadow="hover" class="stat-card">
+                <template #header>
+                    <div class="card-header">
+                        <span>今日收入(元)</span>
+                    </div>
+                </template>
+                <div class="card-value">{{ orderStats.todayIncome }}</div>
+            </el-card>
+        </div>
+
+        <div class="chart-container">
+            <h3 class="chart-title">本年度月度订单量趋势</h3>
+            <div ref="chartRef" class="chart"></div>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts" name="dashboard">
-import countup from '@/components/countup.vue';
-import { use } from 'echarts/core';
-import { BarChart, LineChart } from 'echarts/charts';
-import {
-    GridComponent,
-    TooltipComponent,
-    LegendComponent,
-    TitleComponent,
-} from 'echarts/components';
-import { CanvasRenderer } from 'echarts/renderers';
-import VChart from 'vue-echarts';
-import { dashOpt1 } from './chart/options';
+import { ref, reactive, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
+import { fetchOrderStats, fetchOrderList } from '@/api/order';
+import * as echarts from 'echarts';
 
-use([
-    CanvasRenderer,
-    BarChart,
-    GridComponent,
-    LineChart,
-    TooltipComponent,
-    LegendComponent,
-    TitleComponent,
-]);
+// 统计数据
+const orderStats = reactive({
+    todayOrderCount: 0,
+    todayPaidOrderCount: 0,
+    todayIncome: 0
+});
+
+// 图表相关
+const chartRef = ref<HTMLElement>();
+let myChart: echarts.ECharts;
+
+// 获取订单统计数据
+const getOrderStats = async () => {
+    try {
+        const res = await fetchOrderStats();
+        console.log('获取订单统计数据:', res);
+        
+        if (res.data && res.data.success) {
+            const data = res.data.data;
+            orderStats.todayOrderCount = data.todayOrderCount || 0;
+            orderStats.todayPaidOrderCount = data.todayPaidOrderCount || 0;
+            orderStats.todayIncome = data.todayIncome || 0;
+            console.log('数据库统计数据:', orderStats);
+        } else {
+            ElMessage.error('获取订单统计数据失败');
+        }
+        
+        // 获取月度订单数据
+        getMonthlyOrderData();
+    } catch (error) {
+        console.error('获取订单统计数据出错:', error);
+        ElMessage.error('获取订单统计数据出错');
+    }
+};
+
+// 获取月度订单数据
+const getMonthlyOrderData = async () => {
+    try {
+        // 计算当前年份的月度数据
+        const currentYear = new Date().getFullYear();
+        const monthlyData = Array(12).fill(0);
+        
+        // 获取所有订单数据
+        const response = await fetchOrderList({ limit: 1000 }); // 获取足够多的订单以计算统计数据
+        
+        if (response.data && response.data.success) {
+            const orders = response.data.data.orders;
+            
+            // 处理每个订单
+            orders.forEach(order => {
+                const orderDate = new Date(order.createdAt);
+                // 确保只统计当前年份的订单
+                if (orderDate.getFullYear() === currentYear) {
+                    const month = orderDate.getMonth(); // 0-11
+                    monthlyData[month]++;
+                }
+            });
+            
+            console.log('月度订单数据:', monthlyData);
+            
+            // 初始化图表
+            initChart(monthlyData);
+        } else {
+            console.error('获取订单列表失败');
+            // 使用默认数据初始化图表
+            initChart([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        }
+    } catch (error) {
+        console.error('获取月度订单数据出错:', error);
+        // 使用默认数据初始化图表
+        initChart([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    }
+};
+
+// 初始化图表
+const initChart = (monthlyData) => {
+    if (chartRef.value) {
+        if (myChart) {
+            myChart.dispose(); // 如果图表实例存在，先销毁
+        }
+        
+        myChart = echarts.init(chartRef.value);
+        
+        const option = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross',
+                    label: {
+                        backgroundColor: '#6a7985'
+                    }
+                }
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                top: '30px',
+                containLabel: true
+            },
+            xAxis: [
+                {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+                    axisLine: {
+                        lineStyle: {
+                            color: '#999'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#666',
+                        fontSize: 12
+                    }
+                }
+            ],
+            yAxis: [
+                {
+                    type: 'value',
+                    splitLine: {
+                        lineStyle: {
+                            type: 'dashed',
+                            color: '#DDD'
+                        }
+                    },
+                    axisLine: {
+                        show: false
+                    },
+                    axisTick: {
+                        show: false
+                    },
+                    axisLabel: {
+                        color: '#666',
+                        fontSize: 12
+                    }
+                }
+            ],
+            series: [
+                {
+                    name: '订单量',
+                    type: 'line',
+                    stack: 'Total',
+                    smooth: true,
+                    lineStyle: {
+                        width: 0
+                    },
+                    showSymbol: false,
+                    areaStyle: {
+                        opacity: 0.8,
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            {
+                                offset: 0,
+                                color: 'rgba(128, 180, 244, 0.9)'
+                            },
+                            {
+                                offset: 1,
+                                color: 'rgba(128, 180, 244, 0.3)'
+                            }
+                        ])
+                    },
+                    emphasis: {
+                        focus: 'series'
+                    },
+                    data: monthlyData
+                }
+            ]
+        };
+        
+        myChart.setOption(option);
+        window.addEventListener('resize', () => {
+            myChart.resize();
+        });
+    }
+};
+
+onMounted(() => {
+    getOrderStats();
+});
 </script>
 
-<style>
-.card-body {
-    display: flex;
-    align-items: center;
-    height: 100px;
-    padding: 0;
-}
-</style>
 <style scoped>
-.card-content {
+.dashboard-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.stats-row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 20px;
+    height: 150px;
+}
+
+.stat-card {
     flex: 1;
+    margin: 0 10px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.stat-card:first-child {
+    margin-left: 0;
+}
+
+.stat-card:last-child {
+    margin-right: 0;
+}
+
+.card-header {
     text-align: center;
-    font-size: 14px;
-    color: #999;
-    padding: 0 20px;
+    font-weight: bold;
+    font-size: 16px;
 }
 
-.card-num {
-    font-size: 30px;
-}
-
-.card-icon {
-    font-size: 50px;
-    width: 100px;
-    height: 100px;
+.card-value {
+    font-size: 36px;
+    font-weight: bold;
     text-align: center;
-    line-height: 100px;
-    color: #fff;
+    color: #409EFF;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    height: 100%;
 }
 
-.bg1 {
-    background: #2d8cf0;
+.chart-container {
+    flex: 1;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
 }
 
-.bg2 {
-    background: #64d572;
-}
-
-.bg3 {
-    background: #f25e43;
-}
-
-.bg4 {
-    background: #e9a745;
-}
-
-.color1 {
-    color: #2d8cf0;
-}
-
-.color2 {
-    color: #64d572;
-}
-
-.color3 {
-    color: #f25e43;
-}
-
-.color4 {
-    color: #e9a745;
+.chart-title {
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0 0 20px 0;
+    color: #333;
 }
 
 .chart {
     width: 100%;
-    height: 400px;
+    flex: 1;
+    min-height: 350px;
 }
 
-.card-header {
-    padding-left: 10px;
-    margin-bottom: 20px;
+:deep(.el-card__header) {
+    padding: 12px;
+    background-color: #f5f7fa;
 }
 
-.card-header-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.card-header-desc {
-    font-size: 14px;
-    color: #999;
+:deep(.el-card__body) {
+    padding: 0;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 </style>

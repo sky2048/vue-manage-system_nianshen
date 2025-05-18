@@ -23,6 +23,12 @@ service.interceptors.request.use(
             config.headers['Authorization'] = `Bearer ${token}`;
             console.log('添加认证Token到请求头');
         }
+
+        // 添加时间戳防止缓存
+        if (config.method?.toLowerCase() === 'get') {
+            config.params = { ...config.params, _t: Date.now() };
+        }
+        
         return config;
     },
     (error: AxiosError) => {
@@ -37,6 +43,10 @@ service.interceptors.response.use(
         
         // 将201(Created)也视为成功状态
         if (response.status === 200 || response.status === 201) {
+            // 调试日志
+            if (response.config.url?.includes('orders')) {
+                console.log('订单API响应数据:', JSON.stringify(response.data));
+            }
             return response;
         } else {
             console.error('响应状态码异常:', response.status, response.statusText);
