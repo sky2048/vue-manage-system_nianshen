@@ -10,7 +10,7 @@ export const fetchOrderList = (params: any = {}) => {
     // 使用管理员接口获取所有订单，如果没有token则使用匿名接口
     const url = '/api/orders';
     
-    console.log('调用订单列表API', url);
+    console.log('调用订单列表API', url, params);
     return request({
         url,
         method: 'get',
@@ -20,6 +20,7 @@ export const fetchOrderList = (params: any = {}) => {
 
 // 创建订单
 export const createOrder = (data: any) => {
+    console.log('创建订单:', data);
     return request({
         url: '/api/orders',
         method: 'post',
@@ -29,6 +30,7 @@ export const createOrder = (data: any) => {
 
 // 获取订单详情
 export const fetchOrderDetail = (id: number) => {
+    console.log('获取订单详情:', id);
     return request({
         url: `/api/orders/${id}`,
         method: 'get'
@@ -42,6 +44,7 @@ export const updateOrderStatus = (id: number, data: any) => {
         return Promise.reject(new Error('需要管理员权限'));
     }
     
+    console.log('更新订单状态:', id, data);
     return request({
         url: `/api/orders/${id}`,
         method: 'put',
@@ -56,6 +59,7 @@ export const deleteOrder = (id: number) => {
         return Promise.reject(new Error('需要管理员权限'));
     }
     
+    console.log('删除订单:', id);
     return request({
         url: `/api/orders/${id}`,
         method: 'delete'
@@ -64,6 +68,7 @@ export const deleteOrder = (id: number) => {
 
 // 获取订单统计数据
 export const fetchOrderStats = () => {
+    console.log('获取订单统计数据');
     return request({
         url: '/api/orders/stats',
         method: 'get'

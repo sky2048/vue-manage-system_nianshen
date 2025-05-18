@@ -141,9 +141,18 @@ const getData = async () => {
 			limit: page.size
 		};
 		
+		console.log('请求参数:', params);
+		
 		// 直接调用API获取所有订单数据
 		const res = await fetchOrderList(params);
 		console.log('订单数据响应:', res);
+		
+		// 检查响应是否来自真实后端API
+		if (res.config && res.config.url && res.config.url.includes('localhost:5000')) {
+			console.log('成功从后端API获取数据');
+		} else {
+			console.warn('可能正在使用模拟数据');
+		}
 		
 		if (res.data && res.data.success) {
 			// 直接使用返回的数据
