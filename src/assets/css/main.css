@@ -85,3 +85,26 @@ i {
 	--header-text-color: #fff;
 	--active-color: var(--el-color-primary);
 }
+
+/* 全局消息提示样式 */
+.el-message {
+    --el-message-min-width: 300px;
+    --el-message-padding: 12px 20px;
+    --el-message-bg-color: var(--el-bg-color);
+    --el-message-border-color: var(--el-border-color-lighter);
+    --el-message-close-size: 16px;
+    --el-message-close-icon-color: var(--el-text-color-placeholder);
+    --el-message-close-hover-color: var(--el-text-color-secondary);
+}
+
+/* 错误消息样式 */
+.el-message--error {
+    --el-message-border-color: #F86C6B;
+    --el-message-bg-color: #FFECEC;
+}
+
+/* 成功消息样式 */
+.el-message--success {
+    --el-message-border-color: #4AB461;
+    --el-message-bg-color: #F0F9EB;
+}

@@ -43,7 +43,7 @@
 
 <script setup lang="ts" name="orderList">
 import { ref, reactive, onMounted } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { CirclePlusFilled, View, Edit, Delete } from '@element-plus/icons-vue';
 import { fetchOrderList, fetchOrderDetail, updateOrderStatus, deleteOrder } from '@/api/order';
 import TableCustom from '@/components/table-custom.vue';
@@ -183,6 +183,8 @@ let options = ref<FormOption>({
 				{ label: '代理记账', value: '代理记账' },
 				{ label: '税务咨询', value: '税务咨询' },
 				{ label: '其他服务', value: '其他服务' },
+				{ label: '执照年报', value: '执照年报' },
+				{ label: '执照作废', value: '执照作废' },
 			]
 		},
 		{
@@ -280,16 +282,66 @@ const handleView = async (row: any) => {
 // 删除相关
 const handleDelete = async (row: any) => {
 	try {
-		const res = await deleteOrder(row.id);
-		if (res.data.success) {
+		// 提示用户确认删除
+		await ElMessageBox.confirm(
+			`确定要删除订单 "${row.companyName}" 吗？此操作不可恢复！`,
+			'删除确认',
+			{
+				confirmButtonText: '确定',
+				cancelButtonText: '取消',
+				type: 'warning'
+			}
+		);
+		
+		// 执行删除操作
+		const result = await deleteOrder(row.id);
+		if (result.data.success) {
 			ElMessage.success('删除成功');
 			getData();
 		} else {
-			ElMessage.error(res.data.message || '删除失败');
+			ElMessage.error(result.data.message || '删除失败');
 		}
-	} catch (error) {
-		console.error('删除订单出错:', error);
-		ElMessage.error('删除失败');
+	} catch (error: any) {
+		// 特殊处理401未授权错误
+		if (error.response && error.response.status === 401) {
+			ElMessage.error('您没有权限执行此操作，请使用管理员账号登录');
+			// 可以选择性地跳转到登录页面
+			// router.push('/login');
+		} else if (error === 'cancel') {
+			// 用户取消了删除操作
+			console.log('用户取消了删除');
+		} else {
+			console.error('删除订单出错:', error);
+			ElMessage.error(error.message || '删除失败');
+		}
+	}
+};
+
+// 修改订单处理函数
+const handleSave = async (formData: any) => {
+	try {
+		const orderId = formData.id;
+		
+		// 调用API更新订单
+		const result = await updateOrderStatus(orderId, formData);
+		
+		if (result.data.success) {
+			ElMessage.success('更新成功');
+			closeDialog();
+			getData();
+		} else {
+			ElMessage.error(result.data.message || '更新失败');
+		}
+	} catch (error: any) {
+		// 特殊处理401未授权错误
+		if (error.response && error.response.status === 401) {
+			ElMessage.error('您没有权限执行此操作，请使用管理员账号登录');
+			// 可以选择性地跳转到登录页面
+			// router.push('/login');
+		} else {
+			console.error('更新订单出错:', error);
+			ElMessage.error(error.message || '更新失败');
+		}
 	}
 };
 </script>

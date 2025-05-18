@@ -15,11 +15,11 @@
                         </template>
                     </el-input>
                 </el-form-item>
-                <el-form-item prop="email">
-                    <el-input v-model="param.email" placeholder="邮箱">
+                <el-form-item prop="phone">
+                    <el-input v-model="param.phone" placeholder="手机号">
                         <template #prepend>
                             <el-icon>
-                                <Message />
+                                <Phone />
                             </el-icon>
                         </template>
                     </el-input>
@@ -52,12 +52,13 @@ import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { Register } from '@/types/user';
+import { register as registerApi } from '@/api/auth';
 
 const router = useRouter();
 const param = reactive<Register>({
     username: '',
     password: '',
-    email: '',
+    phone: '',
 });
 
 const rules: FormRules = {
@@ -69,16 +70,86 @@ const rules: FormRules = {
         },
     ],
     password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-    email: [{ required: true, message: '请输入邮箱', trigger: 'blur' }],
+    phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
 };
 const register = ref<FormInstance>();
+
+// 添加一个辅助函数用于跳转到登录页
+const redirectToLogin = () => {
+    console.log('尝试跳转到登录页面');
+    
+    try {
+        // 使用路由导航
+        router.push('/login').catch(err => {
+            console.error('路由跳转失败:', err);
+            
+            // 如果路由跳转失败，使用window.location作为备用方案
+            setTimeout(() => {
+                console.log('使用window.location作为备用跳转方式');
+                window.location.href = '/#/login';
+            }, 500);
+        });
+    } catch (e) {
+        console.error('跳转出错:', e);
+        // 使用最简单的方式跳转
+        window.location.href = '/#/login';
+    }
+};
+
 const submitForm = (formEl: FormInstance | undefined) => {
     if (!formEl) return;
-    formEl.validate((valid: boolean) => {
+    formEl.validate(async (valid: boolean) => {
         if (valid) {
-            ElMessage.success('注册成功，请登录');
-            router.push('/login');
+            try {
+                // 记录注册参数
+                console.log('准备注册用户:', param);
+                
+                // 调用注册API
+                const res = await registerApi(param);
+                
+                // 处理成功响应 - 包括200和201状态码
+                console.log('注册响应:', res);
+                
+                // 检查是否有success标志或状态码是201
+                if ((res.data && res.data.success) || res.status === 201) {
+                    // 显示成功消息
+                    ElMessage.success('注册成功，请登录');
+                    
+                    // 使用setTimeout确保消息显示后再跳转
+                    setTimeout(() => {
+                        console.log('注册成功，跳转到登录页面');
+                        redirectToLogin();
+                    }, 1000);
+                } else {
+                    console.log('注册失败(业务错误):', res.data);
+                    ElMessage.error(res.data.message || '注册失败，请更换用户名');
+                }
+            } catch (error: any) {
+                console.log('注册错误(HTTP错误):', error);
+                
+                // 特殊处理201错误 - 这种情况其实是成功的
+                if (error.message === 'Created') {
+                    console.log('注册实际上成功了，但被当作错误处理');
+                    ElMessage.success('注册成功，请登录');
+                    
+                    // 使用setTimeout确保消息显示后再跳转
+                    setTimeout(() => {
+                        console.log('注册成功(从错误处理)，跳转到登录页面');
+                        redirectToLogin();
+                    }, 1000);
+                    return;
+                }
+                
+                // 获取更详细的错误信息
+                if (error.response && error.response.data) {
+                    console.log('错误详情:', error.response.data);
+                    ElMessage.error(error.response.data.message || '注册失败，请更换用户名');
+                } else {
+                    ElMessage.error('注册失败，请更换用户名');
+                }
+            }
         } else {
+            ElMessage.error('请输入完整的注册信息');
             return false;
         }
     });

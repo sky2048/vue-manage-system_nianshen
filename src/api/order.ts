@@ -1,12 +1,22 @@
 import request from '../utils/request';
 
-// 获取订单列表（使用匿名接口）
+// 检查是否有token (管理员登录状态)
+const isAdmin = () => {
+    return !!localStorage.getItem('vuems_token');
+};
+
+// 获取订单列表
 export const fetchOrderList = (params: any = {}) => {
-    // 直接调用不带参数的API获取所有订单
-    console.log('调用订单列表API');
+    // 使用管理员接口获取所有订单，如果没有token则使用匿名接口
+    const url = isAdmin() ? 
+        'http://localhost:5000/api/orders' : 
+        'http://localhost:5000/api/orders/by-device';
+    
+    console.log('调用订单列表API', url);
     return request({
-        url: 'http://localhost:5000/api/orders/by-device',
-        method: 'get'
+        url,
+        method: 'get',
+        params
     }).catch(error => {
         console.warn('获取订单数据失败，详细错误:', error);
         console.warn('使用模拟数据:');
@@ -97,6 +107,11 @@ export const fetchOrderDetail = (id: number) => {
 
 // 更新订单状态
 export const updateOrderStatus = (id: number, data: any) => {
+    if (!isAdmin()) {
+        console.error('需要管理员权限才能更新订单状态');
+        return Promise.reject(new Error('需要管理员权限'));
+    }
+    
     return request({
         url: `http://localhost:5000/api/orders/${id}`,
         method: 'put',
@@ -106,28 +121,45 @@ export const updateOrderStatus = (id: number, data: any) => {
 
 // 删除订单
 export const deleteOrder = (id: number) => {
+    if (!isAdmin()) {
+        console.error('需要管理员权限才能删除订单');
+        return Promise.reject(new Error('需要管理员权限'));
+    }
+    
     return request({
         url: `http://localhost:5000/api/orders/${id}`,
         method: 'delete'
     });
 };
 
-// 获取订单统计数据（模拟数据，实际项目应从后端获取）
+// 获取订单统计数据
 export const fetchOrderStats = () => {
-    // 由于stats接口需要认证，我们这里模拟返回数据
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve({
-                data: {
-                    success: true,
-                    data: {
-                        todayOrderCount: 5,
-                        todayIncome: 5000,
-                        totalOrderCount: 35,
-                        totalIncome: 35000
-                    }
-                }
-            });
-        }, 500);
-    });
+    if (isAdmin()) {
+        // 如果有登录token，使用真实API
+        return request({
+            url: 'http://localhost:5000/api/orders/stats',
+            method: 'get'
+        }).catch(error => {
+            console.warn('获取订单统计失败，使用模拟数据:', error);
+            return getMockOrderStats();
+        });
+    } else {
+        // 如果没有token，返回模拟数据
+        return getMockOrderStats();
+    }
 }; 
+
+// 获取模拟订单统计数据
+function getMockOrderStats() {
+    return Promise.resolve({
+        data: {
+            success: true,
+            data: {
+                todayOrderCount: 5,
+                todayIncome: 5000,
+                totalOrderCount: 35,
+                totalIncome: 35000
+            }
+        }
+    });
+} 
